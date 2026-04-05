@@ -4,13 +4,20 @@
 FROM maven:3.9.4-eclipse-temurin-17 AS build
 WORKDIR /app
 
-# Copy toàn bộ mã nguồn vào container
-COPY . .
+# Copy pom trước để cache dependencies
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
 
-# Build project, bỏ qua test
-RUN mvn clean package -DskipTests
+# Copy source code
+COPY src ./src
 
-# Kiểm tra file WAR
+# Build project (skip test + chỉ định main class)
+RUN mvn clean package \
+    -DskipTests \
+    -Dspring-boot.main-class=com.devteria.gateway.ApiGatewayApplication \
+    -B
+
+# Debug: xem file build ra
 RUN ls -la /app/target
 
 # ========================
@@ -19,11 +26,11 @@ RUN ls -la /app/target
 FROM eclipse-temurin:17-jdk-jammy
 WORKDIR /app
 
-# Copy file WAR từ build stage
-COPY --from=build /app/target/api-gateway-0.0.1-SNAPSHOT.war api-gateway.war
+# Copy file JAR (KHÔNG phải WAR)
+COPY --from=build /app/target/api-gateway-0.0.1-SNAPSHOT.jar app.jar
 
-# Mở cổng
+# Port gateway
 EXPOSE 8080
 
-# Khởi chạy ứng dụng
-ENTRYPOINT ["java", "-jar", "api-gateway.war"]
+# Run app
+ENTRYPOINT ["java", "-jar", "app.jar"]
