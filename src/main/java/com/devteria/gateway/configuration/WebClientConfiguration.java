@@ -17,7 +17,7 @@ public class WebClientConfiguration {
     @Bean
     WebClient webClient(){
         return WebClient.builder()
-                .baseUrl("http://localhost:8089/identity")
+                .baseUrl("https://identity-service-qq5p.onrender.com/identity")
                 .build();
     }
 
